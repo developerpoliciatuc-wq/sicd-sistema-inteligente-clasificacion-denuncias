@@ -1,0 +1,7 @@
+{
+  "dest_root": "\\\\ANALISIS-3\\Analisis-3\\MAPA DEL DELITO",
+  "revision_root": "\\\\ANALISIS-3\\Analisis-3\\MAPA DEL DELITO\\_REVISION_MANUAL",
+  "fuzzy_threshold": 85,
+  "stats_xlsx": "Base_Estadistica_2025.xlsx",
+  "gemini_model": "gemini-1.5-flash"
+}
