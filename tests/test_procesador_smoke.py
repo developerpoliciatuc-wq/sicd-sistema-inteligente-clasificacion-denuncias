@@ -54,6 +54,7 @@ def test_procesar_archivo_happy_path_routes_ok(monkeypatch, tmp_path: Path):
         fecha="2025-12-15",
         comisaria_detectada="Comisaria 1",
         tipo_delito="ROBO",
+        modalidad_delito="ROBO_ARREBATO",
     )
     monkeypatch.setattr(
         procesador,

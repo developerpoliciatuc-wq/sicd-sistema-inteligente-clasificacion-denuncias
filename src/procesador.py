@@ -14,6 +14,7 @@ from src.services.ocr_service import configure_tesseract, ocr_image_bytes, ocr_p
 from src.services.pdf_service import extract_text_from_pdf
 from src.services.file_router import build_destination
 from src.services.stats_service import append_stats
+from src.services.geocoding_service import get_geocoding_service
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,10 @@ def procesar_archivo(
         if not stats_path.is_absolute():
             stats_path = repo_root / stats_path
 
+        # Extraer datos de coordenadas si existen
+        coords = getattr(den, "coordenadas", None) if den else None
+        direccion = getattr(den, "direccion_hecho", None) if den else None
+        
         append_stats(
             stats_path,
             {
@@ -81,6 +86,10 @@ def procesar_archivo(
                 "comisaria": getattr(den, "comisaria_asignada", None) if den else None,
                 "tipo_delito": getattr(den, "tipo_delito", None) if den else None,
                 "modalidad_delito": getattr(den, "modalidad_delito", None) if den else None,
+                "direccion_hecho": direccion.to_query() if direccion else None,
+                "latitud": coords.latitud if coords else None,
+                "longitud": coords.longitud if coords else None,
+                "precision_geo": coords.precision if coords else None,
                 "archivo_origen": filename,
                 "archivo_destino": str(decision.dest_path),
                 "status": decision.status,
@@ -132,6 +141,19 @@ def procesar_archivo(
             score_match=match.score,
         )
 
+    # 4) Geocodificación del lugar del hecho
+    if denuncia.direccion_hecho:
+        try:
+            geocoding_service = get_geocoding_service()
+            coordenadas = geocoding_service.geocodificar_con_fallback(denuncia.direccion_hecho)
+            if coordenadas:
+                denuncia = replace(denuncia, coordenadas=coordenadas)
+                logger.info(f"Geocodificación exitosa: ({coordenadas.latitud}, {coordenadas.longitud})")
+            else:
+                logger.warning("No se pudo geocodificar la dirección del hecho")
+        except Exception as e:
+            logger.error(f"Error en geocodificación: {e}")
+
     year = (fecha_dt.year if fecha_dt else datetime.now().year)
     decision = build_destination(
         dest_root=cfg.dest_root,
@@ -155,6 +177,10 @@ def procesar_archivo(
     if not stats_path.is_absolute():
         stats_path = repo_root / stats_path
 
+    # Extraer datos de coordenadas
+    coords = denuncia.coordenadas
+    direccion = denuncia.direccion_hecho
+    
     append_stats(
         stats_path,
         {
@@ -164,6 +190,10 @@ def procesar_archivo(
             "comisaria": denuncia.comisaria_asignada,
             "tipo_delito": denuncia.tipo_delito,
             "modalidad_delito": denuncia.modalidad_delito,
+            "direccion_hecho": direccion.to_query() if direccion else None,
+            "latitud": coords.latitud if coords else None,
+            "longitud": coords.longitud if coords else None,
+            "precision_geo": coords.precision if coords else None,
             "archivo_origen": filename,
             "archivo_destino": str(decision.dest_path),
             "status": decision.status,

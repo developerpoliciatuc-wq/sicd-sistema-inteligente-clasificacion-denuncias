@@ -1,0 +1,56 @@
+{
+  "bounds": {
+    "norte": -26.0,
+    "sur": -28.0,
+    "este": -64.5,
+    "oeste": -66.5
+  },
+  "centro": {
+    "latitud": -26.8241,
+    "longitud": -65.2226,
+    "zoom_default": 12
+  },
+  "localidades": [
+    "San Miguel de Tucumán",
+    "Yerba Buena",
+    "Tafí Viejo",
+    "Banda del Río Salí",
+    "Alderetes",
+    "Lules",
+    "Famaillá",
+    "Monteros",
+    "Concepción",
+    "Aguilares",
+    "Juan Bautista Alberdi",
+    "Simoca",
+    "Graneros",
+    "Tafí del Valle",
+    "Trancas",
+    "Bella Vista",
+    "Burruyacú",
+    "El Manantial",
+    "Las Talitas",
+    "San Pablo",
+    "Villa Carmela",
+    "Lastenia",
+    "Los Ralos",
+    "San Andrés",
+    "Delfín Gallo"
+  ],
+  "barrios_capital": [
+    "Centro",
+    "Barrio Norte",
+    "Barrio Sur",
+    "Villa Luján",
+    "Villa 9 de Julio",
+    "Villa Urquiza",
+    "Ciudadela",
+    "11 de Marzo",
+    "Alejandro Heredia",
+    "San Cayetano",
+    "Juan XXIII",
+    "Villa Alem",
+    "Villa Muñecas",
+    "Barrio Jardín"
+  ]
+}
