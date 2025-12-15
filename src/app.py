@@ -13,7 +13,7 @@ from src.utils.logging_setup import setup_logging
 # Importaciones para el mapa
 try:
     from streamlit_folium import st_folium
-    from src.services.map_service import crear_mapa_denuncia, agregar_marcador_denuncia
+    from src.services.map_service import crear_mapa_denuncia
     FOLIUM_AVAILABLE = True
 except ImportError:
     FOLIUM_AVAILABLE = False
@@ -168,20 +168,24 @@ def main() -> None:
             st.caption(f"Precisión: {coords.precision} | Fuente: {coords.fuente}")
             
             # Crear mapa centrado en las coordenadas
-            mapa = crear_mapa_denuncia(coords.latitud, coords.longitud, zoom=16)
-            agregar_marcador_denuncia(
-                mapa=mapa,
-                latitud=coords.latitud,
-                longitud=coords.longitud,
-                tipo_delito=denuncia.tipo_delito,
-                modalidad=denuncia.modalidad_delito,
-                fecha=denuncia.fecha,
-                direccion=denuncia.direccion_hecho.to_query() if denuncia.direccion_hecho else None,
-                precision=coords.precision,
+            mapa = crear_mapa_denuncia(
+                coordenadas=coords,
+                denuncia=denuncia
             )
             
             # Mostrar mapa
             st_folium(mapa, width=700, height=400)
+            
+            # Mostrar información de shapefile
+            comisaria = denuncia.comisaria_asignada or denuncia.comisaria_detectada
+            if comisaria:
+                try:
+                    qgis_service = get_qgis_sync_service(repo_root)
+                    ruta_shp = qgis_service.obtener_ruta_shapefile_comisaria(comisaria)
+                    st.info(f"🗺️ Shapefile destino: {ruta_shp}")
+                except Exception:
+                    pass
+                    
         elif denuncia.coordenadas and not FOLIUM_AVAILABLE:
             st.warning("Para ver el mapa, instale: `pip install folium streamlit-folium`")
             coords = denuncia.coordenadas

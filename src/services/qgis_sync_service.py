@@ -1,6 +1,7 @@
 """
 Servicio de sincronización en tiempo real con QGIS.
 Genera archivos GeoJSON que QGIS puede monitorear para actualización automática.
+También escribe directamente a los shapefiles de la red.
 """
 
 import json
@@ -13,6 +14,18 @@ from dataclasses import dataclass, asdict
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Importar el servicio de escritura de shapefiles
+try:
+    from src.services.shapefile_writer_service import ShapefileWriterService
+    SHAPEFILE_WRITER_DISPONIBLE = True
+except ImportError:
+    try:
+        from services.shapefile_writer_service import ShapefileWriterService
+        SHAPEFILE_WRITER_DISPONIBLE = True
+    except ImportError:
+        SHAPEFILE_WRITER_DISPONIBLE = False
+        logger.warning("ShapefileWriterService no disponible")
 
 
 @dataclass
@@ -66,8 +79,11 @@ class QGISSyncService:
     Servicio para sincronización en tiempo real con QGIS.
     
     Genera archivos GeoJSON que QGIS puede monitorear y actualizar automáticamente.
+    También escribe directamente a los shapefiles de la red Z:.
+    
     Soporta:
     - Actualización en tiempo real de puntos
+    - Escritura directa a shapefiles por comisaría
     - Archivo histórico manual
     - Estadísticas de delitos
     """
@@ -75,19 +91,30 @@ class QGISSyncService:
     ARCHIVO_ACTIVO = "denuncias_activas.geojson"
     CARPETA_HISTORICO = "historico"
     
-    def __init__(self, ruta_sync: str):
+    def __init__(self, ruta_sync: str, escribir_shapefiles: bool = True):
         """
         Inicializa el servicio de sincronización.
         
         Args:
             ruta_sync: Ruta a la carpeta de sincronización QGIS (ej: data/OUTPUT/QGIS_SYNC)
+            escribir_shapefiles: Si True, también escribe a los shapefiles de la red
         """
         self.ruta_sync = Path(ruta_sync)
         self.ruta_archivo_activo = self.ruta_sync / self.ARCHIVO_ACTIVO
         self.ruta_historico = self.ruta_sync / self.CARPETA_HISTORICO
+        self.escribir_shapefiles = escribir_shapefiles
         
         # Inicializar puntos vacío ANTES de inicializar estructura
         self._puntos: Dict[str, PuntoDelito] = {}
+        
+        # Inicializar servicio de escritura de shapefiles
+        self._shapefile_writer: Optional[ShapefileWriterService] = None
+        if escribir_shapefiles and SHAPEFILE_WRITER_DISPONIBLE:
+            try:
+                self._shapefile_writer = ShapefileWriterService()
+                logger.info("ShapefileWriterService inicializado correctamente")
+            except Exception as e:
+                logger.warning(f"No se pudo inicializar ShapefileWriterService: {e}")
         
         # Crear estructura de carpetas si no existe
         self._inicializar_estructura()
@@ -207,8 +234,94 @@ class QGISSyncService:
         self._puntos[punto.id] = punto
         self._guardar_geojson()
         
+        # Escribir también al shapefile de la red
+        resultado_shapefile = self._escribir_a_shapefile(
+            comisaria=comisaria,
+            latitud=latitud,
+            longitud=longitud,
+            tipo_delito=tipo_delito,
+            modalidad=modalidad,
+            numero_denuncia=numero_denuncia,
+            fecha_hecho=fecha_hecho,
+            direccion=direccion
+        )
+        
         logger.info(f"Denuncia agregada al mapa: {numero_denuncia} ({tipo_delito} - {modalidad})")
+        if resultado_shapefile:
+            logger.info(f"Shapefile: {resultado_shapefile}")
+        
         return punto
+    
+    def _escribir_a_shapefile(
+        self,
+        comisaria: str,
+        latitud: float,
+        longitud: float,
+        tipo_delito: str,
+        modalidad: str,
+        numero_denuncia: str,
+        fecha_hecho: str,
+        direccion: str
+    ) -> str:
+        """
+        Escribe el punto al shapefile correspondiente en la red.
+        
+        Returns:
+            Mensaje de resultado
+        """
+        if not self._shapefile_writer:
+            return "ShapefileWriter no disponible"
+        
+        try:
+            exito, mensaje = self._shapefile_writer.agregar_punto_a_shapefile(
+                comisaria=comisaria,
+                latitud=latitud,
+                longitud=longitud,
+                tipo_delito=tipo_delito,
+                modalidad=modalidad,
+                numero_denuncia=numero_denuncia,
+                fecha_hecho=fecha_hecho,
+                direccion=direccion
+            )
+            
+            if exito:
+                logger.info(f"✓ Punto guardado en shapefile: {mensaje}")
+            else:
+                logger.warning(f"✗ No se pudo guardar en shapefile: {mensaje}")
+            
+            return mensaje
+        except Exception as e:
+            error_msg = f"Error escribiendo a shapefile: {e}"
+            logger.error(error_msg)
+            return error_msg
+    
+    def verificar_conexion_red(self) -> tuple:
+        """
+        Verifica si la unidad de red Z: está accesible.
+        
+        Returns:
+            Tupla (conectado: bool, mensaje: str)
+        """
+        if not self._shapefile_writer:
+            return False, "ShapefileWriter no disponible"
+        
+        return self._shapefile_writer.verificar_conexion_red()
+    
+    def obtener_ruta_shapefile_comisaria(self, comisaria: str) -> str:
+        """
+        Obtiene la ruta del shapefile para una comisaría específica.
+        
+        Args:
+            comisaria: Nombre de la comisaría
+            
+        Returns:
+            Ruta al shapefile o mensaje de error
+        """
+        if not self._shapefile_writer:
+            return "ShapefileWriter no disponible"
+        
+        ruta = self._shapefile_writer.obtener_ruta_shapefile(comisaria)
+        return ruta if ruta else f"No se encontró shapefile para: {comisaria}"
     
     def eliminar_denuncia(self, numero_denuncia: str) -> bool:
         """
