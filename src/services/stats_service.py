@@ -15,6 +15,7 @@ _HEADERS = [
     "region",
     "comisaria",
     "tipo_delito",
+    "modalidad_delito",
     "archivo_origen",
     "archivo_destino",
     "status",

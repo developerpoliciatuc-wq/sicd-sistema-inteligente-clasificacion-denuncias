@@ -62,6 +62,8 @@ def procesar_archivo(
             fecha_dt=_parse_fecha(getattr(den, "fecha", None)) if den else None,
             original_filename=filename,
             revision_motivo=motivo,
+            tipo_delito=getattr(den, "tipo_delito", None) if den else None,
+            modalidad_delito=getattr(den, "modalidad_delito", None) if den else None,
         )
         decision.dest_path.parent.mkdir(parents=True, exist_ok=True)
         decision.dest_path.write_bytes(file_bytes)
@@ -78,6 +80,7 @@ def procesar_archivo(
                 "region": getattr(den, "region_asignada", None) if den else None,
                 "comisaria": getattr(den, "comisaria_asignada", None) if den else None,
                 "tipo_delito": getattr(den, "tipo_delito", None) if den else None,
+                "modalidad_delito": getattr(den, "modalidad_delito", None) if den else None,
                 "archivo_origen": filename,
                 "archivo_destino": str(decision.dest_path),
                 "status": decision.status,
@@ -112,6 +115,10 @@ def procesar_archivo(
         motivo_revision = "Falta de fecha"
     elif not match:
         motivo_revision = "Conflicto de jurisdiccion (baja similitud)"
+    elif not denuncia.tipo_delito:
+        motivo_revision = "Tipo de delito no determinado"
+    elif not denuncia.modalidad_delito:
+        motivo_revision = "Modalidad de delito no determinada"
 
     fecha_dt = _parse_fecha(denuncia.fecha)
     if denuncia.fecha and not fecha_dt:
@@ -135,6 +142,8 @@ def procesar_archivo(
         fecha_dt=fecha_dt,
         original_filename=filename,
         revision_motivo=motivo_revision,
+        tipo_delito=denuncia.tipo_delito,
+        modalidad_delito=denuncia.modalidad_delito,
     )
 
     # 4) Escribir archivo destino
@@ -154,6 +163,7 @@ def procesar_archivo(
             "region": denuncia.region_asignada,
             "comisaria": denuncia.comisaria_asignada,
             "tipo_delito": denuncia.tipo_delito,
+            "modalidad_delito": denuncia.modalidad_delito,
             "archivo_origen": filename,
             "archivo_destino": str(decision.dest_path),
             "status": decision.status,

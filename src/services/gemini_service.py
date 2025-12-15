@@ -4,6 +4,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import google.generativeai as genai
@@ -15,6 +16,9 @@ logger = logging.getLogger(__name__)
 
 _JSON_BLOCK_RE = re.compile(r"\{[\s\S]*\}")
 
+# Cache para las modalidades cargadas
+_MODALIDADES_CACHE: dict[str, Any] | None = None
+
 
 @dataclass(frozen=True)
 class GeminiResult:
@@ -25,6 +29,55 @@ class GeminiResult:
 def configure_gemini(api_key: str | None) -> None:
     if api_key and api_key.strip():
         genai.configure(api_key=api_key)
+
+
+def _load_modalidades(config_path: Path | None = None) -> dict[str, Any]:
+    """Carga las modalidades de delitos desde el archivo JSON."""
+    global _MODALIDADES_CACHE
+    if _MODALIDADES_CACHE is not None:
+        return _MODALIDADES_CACHE
+    
+    if config_path is None:
+        # Buscar en ubicaciones estándar
+        possible_paths = [
+            Path(__file__).parent.parent.parent / "config" / "modalidades_delitos.json",
+            Path("config/modalidades_delitos.json"),
+        ]
+        for p in possible_paths:
+            if p.exists():
+                config_path = p
+                break
+    
+    if config_path is None or not config_path.exists():
+        logger.warning("No se encontró archivo de modalidades, usando valores por defecto")
+        return {"tipos_delito": [], "modalidades": {}, "definiciones_generales": {}}
+    
+    with open(config_path, "r", encoding="utf-8") as f:
+        _MODALIDADES_CACHE = json.load(f)
+    return _MODALIDADES_CACHE
+
+
+def _build_prompt_modalidades() -> str:
+    """Construye el texto del prompt con todas las definiciones de modalidades."""
+    data = _load_modalidades()
+    
+    lines = []
+    lines.append("=== TIPOS DE DELITO Y SUS MODALIDADES ===\n")
+    
+    # Definiciones generales
+    for tipo in data.get("tipos_delito", []):
+        def_general = data.get("definiciones_generales", {}).get(tipo, "")
+        lines.append(f"## {tipo}")
+        if def_general:
+            lines.append(f"DEFINICIÓN: {def_general}\n")
+        
+        # Modalidades específicas
+        modalidades = data.get("modalidades", {}).get(tipo, {})
+        for modalidad, descripcion in modalidades.items():
+            lines.append(f"  - {modalidad}: {descripcion}")
+        lines.append("")
+    
+    return "\n".join(lines)
 
 
 def _safe_json_loads(text: str) -> dict[str, Any] | None:
@@ -39,15 +92,38 @@ def _safe_json_loads(text: str) -> dict[str, Any] | None:
 
 
 def clasificar_denuncia(texto: str, model_name: str) -> GeminiResult:
-    """Devuelve fecha, comisaria_detectada y tipo_delito. Si falla, denuncia=None."""
-    prompt = (
-        "Extrae datos de una denuncia policial de Tucuman. "
-        "Responde SOLO con JSON valido sin markdown. "
-        "Claves exactas: fecha, comisaria_detectada, tipo_delito. "
-        "fecha en formato AAAA-MM-DD si es posible; si no, null. "
-        "Si no hay datos, usa null.\n\n"
-        "TEXTO_DENUNCIA:\n" + texto
-    )
+    """Devuelve fecha, comisaria_detectada, tipo_delito y modalidad_delito. Si falla, denuncia=None."""
+    
+    modalidades_text = _build_prompt_modalidades()
+    data = _load_modalidades()
+    tipos_validos = data.get("tipos_delito", ["HURTO", "ROBO", "ESTAFA", "PORTACION_ARMA_FUEGO"])
+    
+    prompt = f"""Eres un experto en clasificación de denuncias policiales de Tucumán, Argentina.
+Analiza el siguiente texto de denuncia y extrae la información solicitada.
+
+INSTRUCCIONES:
+1. Extrae la FECHA del hecho en formato AAAA-MM-DD
+2. Identifica la COMISARÍA donde se realizó la denuncia
+3. Clasifica el TIPO DE DELITO: debe ser uno de {tipos_validos}
+4. Determina la MODALIDAD específica del delito basándote en el RELATO DEL HECHO
+
+IMPORTANTE: 
+- Analiza cuidadosamente el "RELATO DEL HECHO" para determinar la modalidad correcta
+- La modalidad debe coincidir EXACTAMENTE con una de las opciones listadas abajo
+- Si no puedes determinar la modalidad con certeza, usa null
+
+{modalidades_text}
+
+Responde ÚNICAMENTE con un JSON válido (sin markdown, sin explicaciones).
+Claves exactas requeridas:
+- "fecha": string en formato AAAA-MM-DD o null
+- "comisaria_detectada": string con nombre de comisaría o null
+- "tipo_delito": uno de {tipos_validos} o null
+- "modalidad_delito": modalidad específica según las definiciones anteriores o null
+
+TEXTO DE LA DENUNCIA:
+{texto}
+"""
 
     try:
         model = genai.GenerativeModel(model_name)
@@ -62,6 +138,7 @@ def clasificar_denuncia(texto: str, model_name: str) -> GeminiResult:
             fecha=data.get("fecha"),
             comisaria_detectada=data.get("comisaria_detectada"),
             tipo_delito=data.get("tipo_delito"),
+            modalidad_delito=data.get("modalidad_delito"),
         )
         return GeminiResult(raw_text=raw, denuncia=denuncia)
     except Exception:

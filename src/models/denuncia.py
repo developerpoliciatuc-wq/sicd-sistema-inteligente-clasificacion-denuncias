@@ -9,6 +9,7 @@ class DenunciaClasificada:
     fecha: Optional[str]
     comisaria_detectada: Optional[str]
     tipo_delito: Optional[str]
+    modalidad_delito: Optional[str] = None
 
     region_asignada: Optional[str] = None
     comisaria_asignada: Optional[str] = None
