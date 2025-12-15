@@ -9,7 +9,7 @@ from src.config_loader import AppConfig
 from src.models.denuncia import DenunciaClasificada
 from src.services.comisarias_repo import load_comisarias
 from src.services.fuzzy_matcher import match_comisaria
-from src.services.gemini_service import clasificar_denuncia
+from src.services.gemini_service import clasificar_denuncia, configure_gemini
 from src.services.ocr_service import configure_tesseract, ocr_image_bytes, ocr_pdf_bytes
 from src.services.pdf_service import extract_text_from_pdf
 from src.services.file_router import build_destination
@@ -96,6 +96,7 @@ def procesar_archivo(
         dest = _write_and_stats(None, "Falta GEMINI_API_KEY")
         return texto, None, "Falta GEMINI_API_KEY", dest
 
+    configure_gemini(cfg.gemini_api_key)
     gem = clasificar_denuncia(texto, model_name=cfg.gemini_model)
     denuncia = gem.denuncia
     if not denuncia:
