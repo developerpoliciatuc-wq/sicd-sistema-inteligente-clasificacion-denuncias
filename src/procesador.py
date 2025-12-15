@@ -15,6 +15,19 @@ from src.services.pdf_service import extract_text_from_pdf
 from src.services.file_router import build_destination
 from src.services.stats_service import append_stats
 from src.services.geocoding_service import get_geocoding_service
+from src.services.qgis_sync_service import QGISSyncService
+
+# Servicio de sincronización QGIS (singleton)
+_qgis_sync_service: QGISSyncService | None = None
+
+
+def get_qgis_sync_service(repo_root: Path) -> QGISSyncService:
+    """Obtiene o crea el servicio de sincronización QGIS."""
+    global _qgis_sync_service
+    if _qgis_sync_service is None:
+        ruta_sync = repo_root / "data" / "OUTPUT" / "QGIS_SYNC"
+        _qgis_sync_service = QGISSyncService(str(ruta_sync))
+    return _qgis_sync_service
 
 logger = logging.getLogger(__name__)
 
@@ -200,5 +213,26 @@ def procesar_archivo(
             "motivo": decision.motivo,
         },
     )
+
+    # 6) Sincronización con QGIS (si hay coordenadas)
+    if denuncia.coordenadas and not motivo_revision:
+        try:
+            qgis_service = get_qgis_sync_service(repo_root)
+            # Extraer número de denuncia del nombre del archivo
+            numero_denuncia = filename.rsplit('.', 1)[0]  # Quitar extensión
+            
+            qgis_service.agregar_denuncia(
+                numero_denuncia=numero_denuncia,
+                latitud=denuncia.coordenadas.latitud,
+                longitud=denuncia.coordenadas.longitud,
+                tipo_delito=denuncia.tipo_delito or "DESCONOCIDO",
+                modalidad=denuncia.modalidad_delito or "",
+                comisaria=denuncia.comisaria_asignada or denuncia.comisaria_detectada or "",
+                fecha_hecho=denuncia.fecha or "",
+                direccion=denuncia.direccion_hecho.to_query() if denuncia.direccion_hecho else "",
+            )
+            logger.info(f"Denuncia sincronizada con QGIS: {numero_denuncia}")
+        except Exception as e:
+            logger.error(f"Error sincronizando con QGIS: {e}")
 
     return texto, denuncia, decision.motivo, decision.dest_path

@@ -15,3 +15,9 @@ google-generativeai>=0.7.2
 geopy>=2.4.0
 folium>=0.15.0
 streamlit-folium>=0.15.0
+
+# GIS y shapefiles (para integración QGIS)
+geopandas>=0.14.0
+shapely>=2.0.0
+fiona>=1.9.0
+pyproj>=3.6.0

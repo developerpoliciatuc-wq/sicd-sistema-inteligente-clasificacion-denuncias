@@ -7,7 +7,7 @@ import streamlit as st
 from dotenv import load_dotenv
 
 from src.config_loader import load_config
-from src.procesador import procesar_archivo
+from src.procesador import procesar_archivo, get_qgis_sync_service
 from src.utils.logging_setup import setup_logging
 
 # Importaciones para el mapa
@@ -18,6 +18,13 @@ try:
 except ImportError:
     FOLIUM_AVAILABLE = False
 
+# Importación del servicio de jurisdicción
+try:
+    from src.services.jurisdiccion_service import JurisdiccionService
+    JURISDICCION_AVAILABLE = True
+except ImportError:
+    JURISDICCION_AVAILABLE = False
+
 
 def main() -> None:
     repo_root = Path(__file__).resolve().parents[1]
@@ -26,9 +33,69 @@ def main() -> None:
     cfg = load_config(repo_root)
     setup_logging(repo_root, cfg)
 
-    st.set_page_config(page_title="SCID", layout="centered")
+    st.set_page_config(page_title="SCID", layout="wide")
     st.title("Sistema de Clasificación Inteligente de Denuncias (SCID)")
 
+    # Sidebar con panel de sincronización QGIS
+    with st.sidebar:
+        st.header("🗺️ Sincronización QGIS")
+        
+        qgis_service = get_qgis_sync_service(repo_root)
+        stats = qgis_service.obtener_estadisticas()
+        
+        st.metric("Denuncias activas", stats["total_denuncias"])
+        
+        # Estadísticas por tipo de delito
+        if stats["por_tipo_delito"]:
+            st.write("**Por tipo de delito:**")
+            for tipo, cantidad in stats["por_tipo_delito"].items():
+                color = {"HURTO": "🔵", "ROBO": "🔴", "ESTAFA": "🟠", "PORTACION_ARMA_FUEGO": "⚫"}.get(tipo, "⚪")
+                st.write(f"{color} {tipo}: {cantidad}")
+        
+        st.divider()
+        
+        # Ruta del archivo GeoJSON
+        st.write("**Archivo GeoJSON:**")
+        st.code(qgis_service.obtener_ruta_archivo_activo(), language=None)
+        
+        st.divider()
+        
+        # Botón de archivo histórico
+        st.write("**Archivar denuncias:**")
+        if st.button("📦 Archivar en histórico", help="Mueve todas las denuncias activas al histórico"):
+            if stats["total_denuncias"] > 0:
+                ruta_archivo = qgis_service.archivar_historico()
+                st.success(f"Archivado: {ruta_archivo}")
+                st.rerun()
+            else:
+                st.warning("No hay denuncias para archivar")
+        
+        # Lista de archivos históricos
+        archivos = qgis_service.listar_archivos_historicos()
+        if archivos:
+            st.write("**Archivos históricos:**")
+            for archivo in archivos[:5]:  # Mostrar últimos 5
+                st.caption(f"📄 {archivo['nombre']}")
+        
+        st.divider()
+        
+        # Estado del servicio de jurisdicción
+        if JURISDICCION_AVAILABLE:
+            st.write("**Validación de jurisdicción:**")
+            try:
+                jurisdiccion_service = JurisdiccionService()
+                info = jurisdiccion_service.obtener_info_estado()
+                if info["servicio_operativo"]:
+                    st.success("✅ Operativo")
+                else:
+                    if not info["geopandas_disponible"]:
+                        st.warning("⚠️ geopandas no instalado")
+                    elif not info["unidad_red_disponible"]:
+                        st.warning(f"⚠️ Red Z: no disponible")
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+    # Panel principal
     st.caption("Carga una denuncia (PDF/Imagen). El sistema extrae texto, clasifica y archiva.")
 
     uploaded = st.file_uploader("Denuncia", type=["pdf", "png", "jpg", "jpeg"], accept_multiple_files=False)
