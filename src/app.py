@@ -98,13 +98,27 @@ def main() -> None:
     # Panel principal
     st.caption("Carga una denuncia (PDF/Imagen). El sistema extrae texto, clasifica y archiva.")
 
+    # Inicializar session_state para persistir resultados
+    if "resultado_procesado" not in st.session_state:
+        st.session_state.resultado_procesado = None
+    if "archivo_actual" not in st.session_state:
+        st.session_state.archivo_actual = None
+
     uploaded = st.file_uploader("Denuncia", type=["pdf", "png", "jpg", "jpeg"], accept_multiple_files=False)
 
     if uploaded is None:
         st.info("Esperando archivo…")
+        # Limpiar resultados anteriores si no hay archivo
+        st.session_state.resultado_procesado = None
+        st.session_state.archivo_actual = None
         return
 
     st.write(f"Archivo: {uploaded.name} ({uploaded.type})")
+
+    # Detectar si cambió el archivo
+    if st.session_state.archivo_actual != uploaded.name:
+        st.session_state.resultado_procesado = None
+        st.session_state.archivo_actual = uploaded.name
 
     if st.button("Procesar y archivar"):
         file_bytes = uploaded.getvalue()
@@ -117,6 +131,22 @@ def main() -> None:
                 filename=uploaded.name,
                 mime_type=uploaded.type or "",
             )
+        
+        # Guardar resultado en session_state
+        st.session_state.resultado_procesado = {
+            "texto": texto,
+            "denuncia": denuncia,
+            "motivo": motivo,
+            "destino": destino
+        }
+
+    # Mostrar resultados si existen (ya sea recién procesados o de session_state)
+    if st.session_state.resultado_procesado:
+        resultado = st.session_state.resultado_procesado
+        texto = resultado["texto"]
+        denuncia = resultado["denuncia"]
+        motivo = resultado["motivo"]
+        destino = resultado["destino"]
 
         st.subheader("Texto extraído")
         st.text_area("", value=texto[:20000], height=240)
@@ -124,80 +154,79 @@ def main() -> None:
         st.subheader("Resultado")
         if denuncia is None:
             st.error(f"No se pudo clasificar. Motivo: {motivo or 'Desconocido'}")
-            return
-
-        # Datos principales de clasificación
-        col1, col2 = st.columns(2)
-        with col1:
-            st.write("**Clasificación:**")
-            st.write(
-                {
-                    "fecha": denuncia.fecha,
-                    "comisaria_detectada": denuncia.comisaria_detectada,
-                    "tipo_delito": denuncia.tipo_delito,
-                    "modalidad_delito": denuncia.modalidad_delito,
-                    "region_asignada": denuncia.region_asignada,
-                    "comisaria_asignada": denuncia.comisaria_asignada,
-                    "score_match": denuncia.score_match,
-                }
-            )
-        
-        with col2:
-            st.write("**Ubicación del hecho:**")
-            if denuncia.direccion_hecho:
-                dir_hecho = denuncia.direccion_hecho
-                ubicacion_info = {
-                    "calle_principal": dir_hecho.calle_principal,
-                    "calle_secundaria": dir_hecho.calle_secundaria,
-                    "numero": dir_hecho.numero,
-                    "barrio": dir_hecho.barrio,
-                    "localidad": dir_hecho.localidad,
-                    "referencia": dir_hecho.referencia,
-                }
-                # Filtrar valores None
-                ubicacion_info = {k: v for k, v in ubicacion_info.items() if v}
-                st.write(ubicacion_info)
-            else:
-                st.info("No se detectó ubicación del hecho")
-
-        # Mapa de georreferenciación
-        if denuncia.coordenadas and FOLIUM_AVAILABLE:
-            st.subheader("📍 Mapa del lugar del hecho")
+        else:
+            # Datos principales de clasificación
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("**Clasificación:**")
+                st.write(
+                    {
+                        "fecha": denuncia.fecha,
+                        "comisaria_detectada": denuncia.comisaria_detectada,
+                        "tipo_delito": denuncia.tipo_delito,
+                        "modalidad_delito": denuncia.modalidad_delito,
+                        "region_asignada": denuncia.region_asignada,
+                        "comisaria_asignada": denuncia.comisaria_asignada,
+                        "score_match": denuncia.score_match,
+                    }
+                )
             
-            coords = denuncia.coordenadas
-            st.caption(f"Precisión: {coords.precision} | Fuente: {coords.fuente}")
-            
-            # Crear mapa centrado en las coordenadas
-            mapa = crear_mapa_denuncia(
-                coordenadas=coords,
-                denuncia=denuncia
-            )
-            
-            # Mostrar mapa
-            st_folium(mapa, width=700, height=400)
-            
-            # Mostrar información de shapefile
-            comisaria = denuncia.comisaria_asignada or denuncia.comisaria_detectada
-            if comisaria:
-                try:
-                    qgis_service = get_qgis_sync_service(repo_root)
-                    ruta_shp = qgis_service.obtener_ruta_shapefile_comisaria(comisaria)
-                    st.info(f"🗺️ Shapefile destino: {ruta_shp}")
-                except Exception:
-                    pass
-                    
-        elif denuncia.coordenadas and not FOLIUM_AVAILABLE:
-            st.warning("Para ver el mapa, instale: `pip install folium streamlit-folium`")
-            coords = denuncia.coordenadas
-            st.write(f"Coordenadas: {coords.latitud}, {coords.longitud}")
-        elif not denuncia.coordenadas and denuncia.direccion_hecho:
-            st.info("No se pudieron obtener coordenadas para la dirección detectada")
+            with col2:
+                st.write("**Ubicación del hecho:**")
+                if denuncia.direccion_hecho:
+                    dir_hecho = denuncia.direccion_hecho
+                    ubicacion_info = {
+                        "calle_principal": dir_hecho.calle_principal,
+                        "calle_secundaria": dir_hecho.calle_secundaria,
+                        "numero": dir_hecho.numero,
+                        "barrio": dir_hecho.barrio,
+                        "localidad": dir_hecho.localidad,
+                        "referencia": dir_hecho.referencia,
+                    }
+                    # Filtrar valores None
+                    ubicacion_info = {k: v for k, v in ubicacion_info.items() if v}
+                    st.write(ubicacion_info)
+                else:
+                    st.info("No se detectó ubicación del hecho")
 
-        if motivo:
-            st.warning(f"Enviado a revisión manual: {motivo}")
+            # Mapa de georreferenciación
+            if denuncia.coordenadas and FOLIUM_AVAILABLE:
+                st.subheader("📍 Mapa del lugar del hecho")
+                
+                coords = denuncia.coordenadas
+                st.caption(f"Precisión: {coords.precision} | Fuente: {coords.fuente}")
+                
+                # Crear mapa centrado en las coordenadas
+                mapa = crear_mapa_denuncia(
+                    coordenadas=coords,
+                    denuncia=denuncia
+                )
+                
+                # Mostrar mapa con key única para evitar problemas de re-render
+                st_folium(mapa, width=700, height=400, key="mapa_denuncia")
+                
+                # Mostrar información de shapefile
+                comisaria = denuncia.comisaria_asignada or denuncia.comisaria_detectada
+                if comisaria:
+                    try:
+                        qgis_service = get_qgis_sync_service(repo_root)
+                        ruta_shp = qgis_service.obtener_ruta_shapefile_comisaria(comisaria)
+                        st.info(f"🗺️ Shapefile destino: {ruta_shp}")
+                    except Exception:
+                        pass
+                        
+            elif denuncia.coordenadas and not FOLIUM_AVAILABLE:
+                st.warning("Para ver el mapa, instale: `pip install folium streamlit-folium`")
+                coords = denuncia.coordenadas
+                st.write(f"Coordenadas: {coords.latitud}, {coords.longitud}")
+            elif not denuncia.coordenadas and denuncia.direccion_hecho:
+                st.info("No se pudieron obtener coordenadas para la dirección detectada")
 
-        if destino:
-            st.success(f"Archivo guardado en: {destino}")
+            if motivo:
+                st.warning(f"Enviado a revisión manual: {motivo}")
+
+            if destino:
+                st.success(f"Archivo guardado en: {destino}")
 
 
 if __name__ == "__main__":

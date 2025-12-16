@@ -49,6 +49,27 @@
         "numero_denuncia": "PRUEBA3",
         "color": "#0000FF"
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -65.1940854,
+          -26.8263773
+        ]
+      },
+      "properties": {
+        "id": "prueba5",
+        "tipo_delito": "ROBO",
+        "modalidad": "ROBO_AGRAVADO_ASALTANTE",
+        "comisaria": "COMISARIA 1",
+        "fecha_hecho": "2025-12-14",
+        "fecha_registro": "2025-12-16T07:44:39.480328",
+        "direccion": "Celedonio Gutiérrez 450, San Miguel de Tucumán, Argentina",
+        "numero_denuncia": "prueba5",
+        "color": "#FF0000"
+      }
     }
   ]
 }
