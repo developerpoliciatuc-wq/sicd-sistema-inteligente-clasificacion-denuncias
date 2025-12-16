@@ -10,8 +10,10 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, List, Any
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 import logging
+
+from src.models.denuncia import NO_CONSTA
 
 logger = logging.getLogger(__name__)
 
@@ -30,20 +32,81 @@ except ImportError:
 
 @dataclass
 class PuntoDelito:
-    """Representa un punto de delito georreferenciado."""
+    """Representa un punto de delito georreferenciado con todos los campos del formulario."""
+    
+    # --- Identificación ---
     id: str
-    latitud: float
-    longitud: float
-    tipo_delito: str
-    modalidad: str
-    comisaria: str
-    fecha_hecho: str
-    fecha_registro: datetime
-    direccion: str
     numero_denuncia: str
+    numero_sumario: str = NO_CONSTA
+    
+    # --- Coordenadas ---
+    latitud: float = 0.0
+    longitud: float = 0.0
+    
+    # --- Institución ---
+    jurisdiccion: str = NO_CONSTA
+    dependencia: str = NO_CONSTA  # comisaria
+    
+    # --- Temporalidad ---
+    fecha_hecho: str = NO_CONSTA
+    mes: str = NO_CONSTA
+    dia_semana: str = NO_CONSTA
+    hora: str = NO_CONSTA
+    franja_horaria: str = "#NO_CONSTA"
+    fecha_registro: datetime = field(default_factory=datetime.now)
+    
+    # --- Ubicación del hecho ---
+    direccion: str = NO_CONSTA
+    lugar: str = NO_CONSTA
+    detalle_lugar: str = NO_CONSTA
+    
+    # --- Clasificación del delito ---
+    tipo_delito: str = NO_CONSTA
+    modalidad: str = NO_CONSTA
+    breve_resena: str = NO_CONSTA
+    
+    # --- Vehículos ---
+    vehiculo_utilizado: str = NO_CONSTA
+    vehiculo_descripcion: str = NO_CONSTA
+    
+    # --- Armas ---
+    arma_utilizada: str = NO_CONSTA
+    arma_detalle: str = NO_CONSTA
+    
+    # --- Elementos sustraídos ---
+    elemento_sustraido: str = NO_CONSTA
+    elemento_detalle: str = NO_CONSTA
+    
+    # --- Datos de la víctima ---
+    victima_nombre: str = NO_CONSTA
+    victima_sexo: str = NO_CONSTA
+    victima_edad: str = NO_CONSTA
+    victima_dni: str = NO_CONSTA
+    victima_direccion: str = NO_CONSTA
+    
+    # --- Datos del denunciante ---
+    denunciante_nombre: str = NO_CONSTA
+    denunciante_sexo: str = NO_CONSTA
+    denunciante_edad: str = NO_CONSTA
+    denunciante_dni: str = NO_CONSTA
+    denunciante_direccion: str = NO_CONSTA
+    vinculo_denunciante_victima: str = NO_CONSTA
+    
+    # --- Datos del causante ---
+    causante_nombre: str = NO_CONSTA
+    causante_sexo: str = NO_CONSTA
+    causante_edad: str = NO_CONSTA
+    causante_dni: str = NO_CONSTA
+    causante_direccion: str = NO_CONSTA
+    causante_descripcion: str = NO_CONSTA
+    causante_situacion: str = NO_CONSTA
+    
+    # --- Control ---
+    requiere_revision: str = "NO"
+    motivo_revision: str = NO_CONSTA
     
     def to_geojson_feature(self) -> Dict[str, Any]:
-        """Convierte el punto a un Feature GeoJSON."""
+        """Convierte el punto a un Feature GeoJSON con todos los campos del formulario."""
         return {
             "type": "Feature",
             "geometry": {
@@ -51,14 +114,74 @@ class PuntoDelito:
                 "coordinates": [self.longitud, self.latitud]  # GeoJSON usa [lng, lat]
             },
             "properties": {
+                # Identificación
                 "id": self.id,
+                "numero_denuncia": self.numero_denuncia,
+                "numero_sumario": self.numero_sumario,
+                
+                # Institución
+                "jurisdiccion": self.jurisdiccion,
+                "dependencia": self.dependencia,
+                
+                # Temporalidad
+                "fecha_hecho": self.fecha_hecho,
+                "mes": self.mes,
+                "dia_semana": self.dia_semana,
+                "hora": self.hora,
+                "franja_horaria": self.franja_horaria,
+                "fecha_registro": self.fecha_registro.isoformat() if isinstance(self.fecha_registro, datetime) else self.fecha_registro,
+                
+                # Ubicación
+                "direccion": self.direccion,
+                "lugar": self.lugar,
+                "detalle_lugar": self.detalle_lugar,
+                
+                # Delito
                 "tipo_delito": self.tipo_delito,
                 "modalidad": self.modalidad,
-                "comisaria": self.comisaria,
-                "fecha_hecho": self.fecha_hecho,
-                "fecha_registro": self.fecha_registro.isoformat(),
-                "direccion": self.direccion,
-                "numero_denuncia": self.numero_denuncia,
+                "breve_resena": self.breve_resena,
+                
+                # Vehículos
+                "vehiculo_utilizado": self.vehiculo_utilizado,
+                "vehiculo_descripcion": self.vehiculo_descripcion,
+                
+                # Armas
+                "arma_utilizada": self.arma_utilizada,
+                "arma_detalle": self.arma_detalle,
+                
+                # Elementos
+                "elemento_sustraido": self.elemento_sustraido,
+                "elemento_detalle": self.elemento_detalle,
+                
+                # Víctima
+                "victima_nombre": self.victima_nombre,
+                "victima_sexo": self.victima_sexo,
+                "victima_edad": self.victima_edad,
+                "victima_dni": self.victima_dni,
+                "victima_direccion": self.victima_direccion,
+                
+                # Denunciante
+                "denunciante_nombre": self.denunciante_nombre,
+                "denunciante_sexo": self.denunciante_sexo,
+                "denunciante_edad": self.denunciante_edad,
+                "denunciante_dni": self.denunciante_dni,
+                "denunciante_direccion": self.denunciante_direccion,
+                "vinculo_denunciante_victima": self.vinculo_denunciante_victima,
+                
+                # Causante
+                "causante_nombre": self.causante_nombre,
+                "causante_sexo": self.causante_sexo,
+                "causante_edad": self.causante_edad,
+                "causante_dni": self.causante_dni,
+                "causante_direccion": self.causante_direccion,
+                "causante_descripcion": self.causante_descripcion,
+                "causante_situacion": self.causante_situacion,
+                
+                # Control
+                "requiere_revision": self.requiere_revision,
+                "motivo_revision": self.motivo_revision,
+                
+                # Color para simbología
                 "color": self._get_color()
             }
         }
@@ -144,17 +267,84 @@ class QGISSyncService:
                 props = feature.get('properties', {})
                 coords = feature.get('geometry', {}).get('coordinates', [0, 0])
                 
+                # Parsear fecha_registro
+                fecha_reg_str = props.get('fecha_registro', datetime.now().isoformat())
+                try:
+                    fecha_registro = datetime.fromisoformat(fecha_reg_str)
+                except:
+                    fecha_registro = datetime.now()
+                
                 punto = PuntoDelito(
+                    # Identificación
                     id=props.get('id', ''),
+                    numero_denuncia=props.get('numero_denuncia', props.get('id', '')),
+                    numero_sumario=props.get('numero_sumario', NO_CONSTA),
+                    
+                    # Coordenadas
                     latitud=coords[1],  # GeoJSON: [lng, lat]
                     longitud=coords[0],
-                    tipo_delito=props.get('tipo_delito', ''),
-                    modalidad=props.get('modalidad', ''),
-                    comisaria=props.get('comisaria', ''),
-                    fecha_hecho=props.get('fecha_hecho', ''),
-                    fecha_registro=datetime.fromisoformat(props.get('fecha_registro', datetime.now().isoformat())),
-                    direccion=props.get('direccion', ''),
-                    numero_denuncia=props.get('numero_denuncia', '')
+                    
+                    # Institución
+                    jurisdiccion=props.get('jurisdiccion', NO_CONSTA),
+                    dependencia=props.get('dependencia', props.get('comisaria', NO_CONSTA)),
+                    
+                    # Temporalidad
+                    fecha_hecho=props.get('fecha_hecho', NO_CONSTA),
+                    mes=props.get('mes', NO_CONSTA),
+                    dia_semana=props.get('dia_semana', NO_CONSTA),
+                    hora=props.get('hora', NO_CONSTA),
+                    franja_horaria=props.get('franja_horaria', '#NO_CONSTA'),
+                    fecha_registro=fecha_registro,
+                    
+                    # Ubicación
+                    direccion=props.get('direccion', NO_CONSTA),
+                    lugar=props.get('lugar', NO_CONSTA),
+                    detalle_lugar=props.get('detalle_lugar', NO_CONSTA),
+                    
+                    # Delito
+                    tipo_delito=props.get('tipo_delito', NO_CONSTA),
+                    modalidad=props.get('modalidad', NO_CONSTA),
+                    breve_resena=props.get('breve_resena', NO_CONSTA),
+                    
+                    # Vehículos
+                    vehiculo_utilizado=props.get('vehiculo_utilizado', NO_CONSTA),
+                    vehiculo_descripcion=props.get('vehiculo_descripcion', NO_CONSTA),
+                    
+                    # Armas
+                    arma_utilizada=props.get('arma_utilizada', NO_CONSTA),
+                    arma_detalle=props.get('arma_detalle', NO_CONSTA),
+                    
+                    # Elementos
+                    elemento_sustraido=props.get('elemento_sustraido', NO_CONSTA),
+                    elemento_detalle=props.get('elemento_detalle', NO_CONSTA),
+                    
+                    # Víctima
+                    victima_nombre=props.get('victima_nombre', NO_CONSTA),
+                    victima_sexo=props.get('victima_sexo', NO_CONSTA),
+                    victima_edad=props.get('victima_edad', NO_CONSTA),
+                    victima_dni=props.get('victima_dni', NO_CONSTA),
+                    victima_direccion=props.get('victima_direccion', NO_CONSTA),
+                    
+                    # Denunciante
+                    denunciante_nombre=props.get('denunciante_nombre', NO_CONSTA),
+                    denunciante_sexo=props.get('denunciante_sexo', NO_CONSTA),
+                    denunciante_edad=props.get('denunciante_edad', NO_CONSTA),
+                    denunciante_dni=props.get('denunciante_dni', NO_CONSTA),
+                    denunciante_direccion=props.get('denunciante_direccion', NO_CONSTA),
+                    vinculo_denunciante_victima=props.get('vinculo_denunciante_victima', NO_CONSTA),
+                    
+                    # Causante
+                    causante_nombre=props.get('causante_nombre', NO_CONSTA),
+                    causante_sexo=props.get('causante_sexo', NO_CONSTA),
+                    causante_edad=props.get('causante_edad', NO_CONSTA),
+                    causante_dni=props.get('causante_dni', NO_CONSTA),
+                    causante_direccion=props.get('causante_direccion', NO_CONSTA),
+                    causante_descripcion=props.get('causante_descripcion', NO_CONSTA),
+                    causante_situacion=props.get('causante_situacion', NO_CONSTA),
+                    
+                    # Control
+                    requiere_revision=props.get('requiere_revision', 'NO'),
+                    motivo_revision=props.get('motivo_revision', NO_CONSTA),
                 )
                 self._puntos[punto.id] = punto
                 
@@ -200,10 +390,46 @@ class QGISSyncService:
         modalidad: str,
         comisaria: str,
         fecha_hecho: str,
-        direccion: str = ""
+        direccion: str = "",
+        # Nuevos campos del formulario completo
+        numero_sumario: str = None,
+        jurisdiccion: str = None,
+        mes: str = None,
+        dia_semana: str = None,
+        hora: str = None,
+        franja_horaria: str = None,
+        lugar: str = None,
+        detalle_lugar: str = None,
+        breve_resena: str = None,
+        vehiculo_utilizado: str = None,
+        vehiculo_descripcion: str = None,
+        arma_utilizada: str = None,
+        arma_detalle: str = None,
+        elemento_sustraido: str = None,
+        elemento_detalle: str = None,
+        victima_nombre: str = None,
+        victima_sexo: str = None,
+        victima_edad: str = None,
+        victima_dni: str = None,
+        victima_direccion: str = None,
+        denunciante_nombre: str = None,
+        denunciante_sexo: str = None,
+        denunciante_edad: str = None,
+        denunciante_dni: str = None,
+        denunciante_direccion: str = None,
+        vinculo_denunciante_victima: str = None,
+        causante_nombre: str = None,
+        causante_sexo: str = None,
+        causante_edad: str = None,
+        causante_dni: str = None,
+        causante_direccion: str = None,
+        causante_descripcion: str = None,
+        causante_situacion: str = None,
+        requiere_revision: bool = False,
+        motivo_revision: str = None,
     ) -> PuntoDelito:
         """
-        Agrega una nueva denuncia al mapa.
+        Agrega una nueva denuncia al mapa con todos los campos del formulario QGIS.
         
         Args:
             numero_denuncia: Número de denuncia (ej: "D-563745-2025")
@@ -214,21 +440,82 @@ class QGISSyncService:
             comisaria: Comisaría que recibió la denuncia
             fecha_hecho: Fecha del hecho
             direccion: Dirección del hecho
+            [... campos adicionales del formulario ...]
             
         Returns:
             PuntoDelito creado
         """
         punto = PuntoDelito(
+            # Identificación
             id=numero_denuncia,
+            numero_denuncia=numero_denuncia,
+            numero_sumario=numero_sumario or NO_CONSTA,
+            
+            # Coordenadas
             latitud=latitud,
             longitud=longitud,
-            tipo_delito=tipo_delito,
-            modalidad=modalidad,
-            comisaria=comisaria,
-            fecha_hecho=fecha_hecho,
+            
+            # Institución
+            jurisdiccion=jurisdiccion or NO_CONSTA,
+            dependencia=comisaria or NO_CONSTA,
+            
+            # Temporalidad
+            fecha_hecho=fecha_hecho or NO_CONSTA,
+            mes=mes or NO_CONSTA,
+            dia_semana=dia_semana or NO_CONSTA,
+            hora=hora or NO_CONSTA,
+            franja_horaria=franja_horaria or "#NO_CONSTA",
             fecha_registro=datetime.now(),
-            direccion=direccion,
-            numero_denuncia=numero_denuncia
+            
+            # Ubicación
+            direccion=direccion or NO_CONSTA,
+            lugar=lugar or NO_CONSTA,
+            detalle_lugar=detalle_lugar or NO_CONSTA,
+            
+            # Delito
+            tipo_delito=tipo_delito or NO_CONSTA,
+            modalidad=modalidad or NO_CONSTA,
+            breve_resena=breve_resena or NO_CONSTA,
+            
+            # Vehículos
+            vehiculo_utilizado=vehiculo_utilizado or NO_CONSTA,
+            vehiculo_descripcion=vehiculo_descripcion or NO_CONSTA,
+            
+            # Armas
+            arma_utilizada=arma_utilizada or NO_CONSTA,
+            arma_detalle=arma_detalle or NO_CONSTA,
+            
+            # Elementos
+            elemento_sustraido=elemento_sustraido or NO_CONSTA,
+            elemento_detalle=elemento_detalle or NO_CONSTA,
+            
+            # Víctima
+            victima_nombre=victima_nombre or NO_CONSTA,
+            victima_sexo=victima_sexo or NO_CONSTA,
+            victima_edad=victima_edad or NO_CONSTA,
+            victima_dni=victima_dni or NO_CONSTA,
+            victima_direccion=victima_direccion or NO_CONSTA,
+            
+            # Denunciante
+            denunciante_nombre=denunciante_nombre or NO_CONSTA,
+            denunciante_sexo=denunciante_sexo or NO_CONSTA,
+            denunciante_edad=denunciante_edad or NO_CONSTA,
+            denunciante_dni=denunciante_dni or NO_CONSTA,
+            denunciante_direccion=denunciante_direccion or NO_CONSTA,
+            vinculo_denunciante_victima=vinculo_denunciante_victima or NO_CONSTA,
+            
+            # Causante
+            causante_nombre=causante_nombre or NO_CONSTA,
+            causante_sexo=causante_sexo or NO_CONSTA,
+            causante_edad=causante_edad or NO_CONSTA,
+            causante_dni=causante_dni or NO_CONSTA,
+            causante_direccion=causante_direccion or NO_CONSTA,
+            causante_descripcion=causante_descripcion or NO_CONSTA,
+            causante_situacion=causante_situacion or NO_CONSTA,
+            
+            # Control
+            requiere_revision="SI" if requiere_revision else "NO",
+            motivo_revision=motivo_revision or NO_CONSTA,
         )
         
         self._puntos[punto.id] = punto
@@ -403,9 +690,9 @@ class QGISSyncService:
             stats["por_tipo_delito"][punto.tipo_delito] = \
                 stats["por_tipo_delito"].get(punto.tipo_delito, 0) + 1
             
-            # Por comisaría
-            stats["por_comisaria"][punto.comisaria] = \
-                stats["por_comisaria"].get(punto.comisaria, 0) + 1
+            # Por comisaría (ahora es 'dependencia')
+            stats["por_comisaria"][punto.dependencia] = \
+                stats["por_comisaria"].get(punto.dependencia, 0) + 1
             
             # Por modalidad
             stats["por_modalidad"][punto.modalidad] = \

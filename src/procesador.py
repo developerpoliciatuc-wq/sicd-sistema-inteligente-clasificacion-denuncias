@@ -167,6 +167,11 @@ def procesar_archivo(
         except Exception as e:
             logger.error(f"Error en geocodificación: {e}")
 
+    # 4.1) Verificar si requiere revisión manual por breve_resena > 254 chars
+    if denuncia.requiere_revision_manual:
+        motivo_revision = motivo_revision or denuncia.motivo_revision
+        logger.warning(f"Denuncia requiere revisión manual: {denuncia.motivo_revision}")
+
     year = (fecha_dt.year if fecha_dt else datetime.now().year)
     decision = build_destination(
         dest_root=cfg.dest_root,
@@ -215,11 +220,19 @@ def procesar_archivo(
     )
 
     # 6) Sincronización con QGIS (si hay coordenadas)
-    if denuncia.coordenadas and not motivo_revision:
+    if denuncia.coordenadas:
         try:
             qgis_service = get_qgis_sync_service(repo_root)
             # Extraer número de denuncia del nombre del archivo
             numero_denuncia = filename.rsplit('.', 1)[0]  # Quitar extensión
+            
+            # Extraer datos de personas para el formulario QGIS
+            victima = denuncia.victima
+            denunciante = denuncia.denunciante
+            causante = denuncia.causante
+            vehiculo = denuncia.vehiculo
+            arma = denuncia.arma
+            elemento = denuncia.elemento_sustraido
             
             qgis_service.agregar_denuncia(
                 numero_denuncia=numero_denuncia,
@@ -230,6 +243,57 @@ def procesar_archivo(
                 comisaria=denuncia.comisaria_asignada or denuncia.comisaria_detectada or "",
                 fecha_hecho=denuncia.fecha or "",
                 direccion=denuncia.direccion_hecho.to_query() if denuncia.direccion_hecho else "",
+                
+                # Nuevos campos del formulario
+                numero_sumario=denuncia.numero_sumario,
+                jurisdiccion=denuncia.jurisdiccion,
+                mes=denuncia.mes,
+                dia_semana=denuncia.dia_semana,
+                hora=denuncia.hora,
+                franja_horaria=denuncia.franja_horaria,
+                lugar=denuncia.lugar,
+                detalle_lugar=denuncia.detalle_lugar,
+                breve_resena=denuncia.breve_resena,
+                
+                # Vehículos
+                vehiculo_utilizado=vehiculo.tipo if vehiculo else None,
+                vehiculo_descripcion=vehiculo.descripcion if vehiculo else None,
+                
+                # Armas
+                arma_utilizada=arma.tipo if arma else None,
+                arma_detalle=arma.detalle if arma else None,
+                
+                # Elementos sustraídos
+                elemento_sustraido=elemento.tipo if elemento else None,
+                elemento_detalle=elemento.detalle if elemento else None,
+                
+                # Víctima
+                victima_nombre=victima.apellido_nombre if victima else None,
+                victima_sexo=victima.sexo if victima else None,
+                victima_edad=victima.edad if victima else None,
+                victima_dni=victima.dni if victima else None,
+                victima_direccion=victima.direccion if victima else None,
+                
+                # Denunciante
+                denunciante_nombre=denunciante.apellido_nombre if denunciante else None,
+                denunciante_sexo=denunciante.sexo if denunciante else None,
+                denunciante_edad=denunciante.edad if denunciante else None,
+                denunciante_dni=denunciante.dni if denunciante else None,
+                denunciante_direccion=denunciante.direccion if denunciante else None,
+                vinculo_denunciante_victima=denuncia.vinculo_denunciante_victima,
+                
+                # Causante
+                causante_nombre=causante.apellido_nombre if causante else None,
+                causante_sexo=causante.sexo if causante else None,
+                causante_edad=causante.edad if causante else None,
+                causante_dni=causante.dni if causante else None,
+                causante_direccion=causante.direccion if causante else None,
+                causante_descripcion=causante.descripcion if causante else None,
+                causante_situacion=causante.situacion if causante else None,
+                
+                # Control
+                requiere_revision=denuncia.requiere_revision_manual,
+                motivo_revision=denuncia.motivo_revision if denuncia.requiere_revision_manual else None,
             )
             logger.info(f"Denuncia sincronizada con QGIS: {numero_denuncia}")
         except Exception as e:
