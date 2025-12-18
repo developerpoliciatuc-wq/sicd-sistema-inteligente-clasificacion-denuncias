@@ -1,0 +1,67 @@
+==============================================================================
+INSTRUCCIONES DE CONFIGURACIÓN QGIS - FORMULARIO AUTOMÁTICO
+==============================================================================
+
+Para que QGIS lea automáticamente los datos de la última denuncia procesada por SCID,
+siga estos pasos:
+
+1. PREPARACIÓN
+   - Asegúrese de que la App SCID esté corriendo.
+   - Procese al menos una denuncia para generar el archivo de prueba en:
+     [Ruta de su proyecto]\data\qgis_staging\active_denuncia.json
+
+2. CONFIGURACIÓN EN QGIS
+   A. Abra su proyecto QGIS y localice la capa de Puntos (Denuncias).
+   B. Clic derecho en la capa > Propiedades > Formulario de atributos.
+   C. Seleccione "Configuración inicial de Python" (icono de Python).
+   D. Pegue el script que se encuentra abajo en el editor de Python.
+
+3. VINCULAR CAMPOS
+   Para CADA CAMPO que desee autocompletar:
+   A. Seleccione el campo en la lista de la izquierda (ej: "Lugar del hecho").
+   B. En el panel derecho, busque la sección "Valor predeterminado".
+   C. En la casilla "Valor predeterminado", escriba:
+      
+      obtener_dato_denuncia("Lugar donde tuvo lugar el delito")
+   
+   D. Asegúrese de activar la casilla "Aplicar el valor predeterminado al actualizar".
+
+   EJEMPLO DE MAPEO (Campo QGIS -> Función):
+   - Fecha del delito  -> obtener_dato_denuncia("Fecha del delito")
+   - Hora del delito   -> obtener_dato_denuncia("Hora del delito")
+   - Breve reseña      -> obtener_dato_denuncia("Breve reseña del hecho con los detalles más relevantes HASTA 254 CARACTERES")
+   (Use los nombres exactos de las claves JSON generadas)
+
+==============================================================================
+SCRIPT PYTHON PARA QGIS (Copiar y Pegar en Propiedades > Formulario > init)
+==============================================================================
+
+import json
+import os
+from qgis.core import QgsProject
+
+# --- CONFIGURACIÓN ---
+# Ajuste esta ruta a donde tenga descargado el proyecto SCID
+# Si está en red, use la ruta de red
+SCID_DATA_PATH = r"C:\Users\Usuario\OneDrive\Desktop\SICD\data\qgis_staging\active_denuncia.json"
+# ---------------------
+
+def obtener_dato_denuncia(campo):
+    """
+    Lee el archivo active_denuncia.json y retorna el valor del campo solicitado.
+    Si no encuentra el archivo o campo, retorna 'NO CONSTA'.
+    """
+    if not os.path.exists(SCID_DATA_PATH):
+        return "NO CONSTA"
+        
+    try:
+        with open(SCID_DATA_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        val = data.get(campo, None)
+        if val is None:
+            return "NO CONSTA"
+        return str(val)
+    except Exception:
+        return "ERROR LEITURA"
+
