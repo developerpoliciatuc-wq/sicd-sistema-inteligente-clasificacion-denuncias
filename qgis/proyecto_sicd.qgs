@@ -1,10 +1,13 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<qgis projectname="SICD - Sistema Inteligente de Clasificación de Denuncias" version="2.14.14-Essen">
+<!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
+<qgis projectname="SICD - Mapa de Denuncias Tucumán" version="2.14.14-Essen">
   <title>SICD - Mapa de Denuncias Tucumán</title>
   <layer-tree-group expanded="1" checked="Qt::Checked" name="">
     <customproperties/>
     <layer-tree-group expanded="1" checked="Qt::Checked" name="Denuncias SICD">
       <customproperties/>
+      <layer-tree-layer expanded="1" checked="Qt::Checked" id="Google_Hybrid20251219080940990" name="Google Hybrid">
+        <customproperties/>
+      </layer-tree-layer>
     </layer-tree-group>
     <layer-tree-group expanded="1" checked="Qt::Checked" name="Jurisdicciones">
       <customproperties/>
@@ -12,80 +15,137 @@
   </layer-tree-group>
   <relations/>
   <mapcanvas>
-    <units>degrees</units>
+    <units>meters</units>
     <extent>
-      <xmin>-66.5</xmin>
-      <ymin>-28.0</ymin>
-      <xmax>-64.5</xmax>
-      <ymax>-26.0</ymax>
+      <xmin>-7264118.43511501792818308</xmin>
+      <ymin>-3106730.50573590211570263</ymin>
+      <xmax>-7253845.29851348977535963</xmax>
+      <ymax>-3096457.36913437396287918</ymax>
     </extent>
     <rotation>0</rotation>
     <projections>0</projections>
     <destinationsrs>
       <spatialrefsys>
-        <proj4>+proj=longlat +datum=WGS84 +no_defs</proj4>
-        <srsid>3452</srsid>
-        <srid>4326</srid>
-        <authid>EPSG:4326</authid>
-        <description>WGS 84</description>
-        <projectionacronym>longlat</projectionacronym>
+        <proj4>+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs</proj4>
+        <srsid>3857</srsid>
+        <srid>3857</srid>
+        <authid>EPSG:3857</authid>
+        <description>WGS 84 / Pseudo Mercator</description>
+        <projectionacronym>merc</projectionacronym>
         <ellipsoidacronym>WGS84</ellipsoidacronym>
-        <geographicflag>true</geographicflag>
+        <geographicflag>false</geographicflag>
       </spatialrefsys>
     </destinationsrs>
+    <rendermaptile>0</rendermaptile>
     <layer_coordinate_transform_info/>
   </mapcanvas>
+  <layer-tree-canvas>
+    <custom-order enabled="0">
+      <item>Google_Hybrid20251219080940990</item>
+    </custom-order>
+  </layer-tree-canvas>
   <legend updateDrawingOrder="true">
-    <legendgroup open="true" checked="Qt::Checked" name="Denuncias SICD"/>
+    <legendgroup open="true" checked="Qt::Checked" name="Denuncias SICD">
+      <legendlayer drawingOrder="-1" open="true" checked="Qt::Checked" name="Google Hybrid" showFeatureCount="0">
+        <filegroup open="true" hidden="false">
+          <legendlayerfile isInOverview="0" layerid="Google_Hybrid20251219080940990" visible="1"/>
+        </filegroup>
+      </legendlayer>
+    </legendgroup>
     <legendgroup open="true" checked="Qt::Checked" name="Jurisdicciones"/>
   </legend>
-  <Gui>
-    <CanvasColorRedPart>255</CanvasColorRedPart>
-    <CanvasColorGreenPart>255</CanvasColorGreenPart>
-    <CanvasColorBluePart>255</CanvasColorBluePart>
-    <SelectionColorRedPart>255</SelectionColorRedPart>
-    <SelectionColorGreenPart>255</SelectionColorGreenPart>
-    <SelectionColorBluePart>0</SelectionColorBluePart>
-    <SelectionColorAlphaPart>255</SelectionColorAlphaPart>
-  </Gui>
-  <visibility-presets/>
-  <projectlayers layercount="0"/>
+  <projectlayers>
+    <maplayer minimumScale="0" maximumScale="1e+08" type="plugin" hasScaleBasedVisibilityFlag="0" name="PyTiledLayer">
+      <extent>
+        <xmin>-20037508.34278924390673637</xmin>
+        <ymin>-20037508.34278924390673637</ymin>
+        <xmax>20037508.34278924390673637</xmax>
+        <ymax>20037508.34278924390673637</ymax>
+      </extent>
+      <id>Google_Hybrid20251219080940990</id>
+      <datasource></datasource>
+      <keywordList>
+        <value></value>
+      </keywordList>
+      <attribution href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</attribution>
+      <layername>Google Hybrid</layername>
+      <srs>
+        <spatialrefsys>
+          <proj4>+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs</proj4>
+          <srsid>3857</srsid>
+          <srid>3857</srid>
+          <authid>EPSG:3857</authid>
+          <description>WGS 84 / Pseudo Mercator</description>
+          <projectionacronym>merc</projectionacronym>
+          <ellipsoidacronym>WGS84</ellipsoidacronym>
+          <geographicflag>false</geographicflag>
+        </spatialrefsys>
+      </srs>
+      <customproperties>
+        <property key="blendMode" value="SourceOver"/>
+        <property key="brigthness" value="0"/>
+        <property key="contrast" value="1"/>
+        <property key="credit" value="Map data ©2015 Google"/>
+        <property key="creditVisibility" value="0"/>
+        <property key="grayscaleRender" value="0"/>
+        <property key="serviceUrl" value="https://mt1.google.com/vt/lyrs=y&amp;x={x}&amp;y={y}&amp;z={z}"/>
+        <property key="smoothRender" value="1"/>
+        <property key="title" value="Google Hybrid"/>
+        <property key="transparency" value="0"/>
+        <property key="yOriginTop" value="1"/>
+        <property key="zmax" value="20"/>
+        <property key="zmin" value="0"/>
+      </customproperties>
+    </maplayer>
+  </projectlayers>
   <properties>
-    <WMSServiceTitle type="QString">SICD - Mapa de Denuncias</WMSServiceTitle>
     <WMSServiceAbstract type="QString">Sistema Inteligente de Clasificación de Denuncias - Policía de Tucumán</WMSServiceAbstract>
-    <WMSContactPerson type="QString"></WMSContactPerson>
-    <WMSContactOrganization type="QString">Policía de Tucumán</WMSContactOrganization>
     <WMSOnlineResource type="QString"></WMSOnlineResource>
-    <WMSContactMail type="QString"></WMSContactMail>
+    <Measurement>
+      <DistanceUnits type="QString"></DistanceUnits>
+      <AreaUnits type="QString"></AreaUnits>
+    </Measurement>
+    <WMSContactPerson type="QString"></WMSContactPerson>
+    <Macros>
+      <pythonCode type="QString">&#xd;
+# Script de inicialización del proyecto SICD&#xd;
+# Se ejecuta automáticamente al abrir el proyecto&#xd;
+&#xd;
+def openProject():&#xd;
+    """Código ejecutado al abrir el proyecto."""&#xd;
+    # Importar el script de monitoreo&#xd;
+    import sys&#xd;
+    import os&#xd;
+    &#xd;
+    # Agregar ruta del proyecto al path&#xd;
+    ruta_proyecto = QgsProject.instance().homePath()&#xd;
+    if ruta_proyecto not in sys.path:&#xd;
+        sys.path.append(ruta_proyecto)&#xd;
+    &#xd;
+    print("[SICD] Proyecto cargado. Ejecute el script auto_refresh_sicd.py en la consola de Python.")&#xd;
+&#xd;
+def saveProject():&#xd;
+    """Código ejecutado al guardar el proyecto."""&#xd;
+    pass&#xd;
+&#xd;
+def closeProject():&#xd;
+    """Código ejecutado al cerrar el proyecto."""&#xd;
+    print("[SICD] Proyecto cerrado.")&#xd;
+      </pythonCode>
+    </Macros>
     <Paths>
       <Absolute type="bool">false</Absolute>
     </Paths>
-    <Macros>
-      <pythonCode type="QString">
-# Script de inicialización del proyecto SICD
-# Se ejecuta automáticamente al abrir el proyecto
-
-def openProject():
-    """Código ejecutado al abrir el proyecto."""
-    # Importar el script de monitoreo
-    import sys
-    import os
-    
-    # Agregar ruta del proyecto al path
-    ruta_proyecto = QgsProject.instance().homePath()
-    if ruta_proyecto not in sys.path:
-        sys.path.append(ruta_proyecto)
-    
-    print("[SICD] Proyecto cargado. Ejecute el script auto_refresh_sicd.py en la consola de Python.")
-
-def saveProject():
-    """Código ejecutado al guardar el proyecto."""
-    pass
-
-def closeProject():
-    """Código ejecutado al cerrar el proyecto."""
-    print("[SICD] Proyecto cerrado.")
-      </pythonCode>
-    </Macros>
+    <WMSContactMail type="QString"></WMSContactMail>
+    <PositionPrecision>
+      <DecimalPlaces type="int">2</DecimalPlaces>
+      <Automatic type="bool">true</Automatic>
+    </PositionPrecision>
+    <Legend>
+      <filterByMap type="bool">false</filterByMap>
+    </Legend>
+    <WMSContactOrganization type="QString">Policía de Tucumán</WMSContactOrganization>
+    <WMSServiceTitle type="QString">SICD - Mapa de Denuncias</WMSServiceTitle>
   </properties>
+  <visibility-presets/>
 </qgis>

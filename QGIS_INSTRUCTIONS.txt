@@ -64,4 +64,3 @@ def obtener_dato_denuncia(campo):
         return str(val)
     except Exception:
         return "ERROR LEITURA"
-
